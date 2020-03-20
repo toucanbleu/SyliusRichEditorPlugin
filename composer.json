@@ -7,7 +7,7 @@
     "require": {
         "php": "~7.2",
         "symfony/http-kernel": "^4.3",
-        "sylius/ui-bundle": "^1.6",
+        "sylius/ui-bundle": "^1.4",
         "ext-json": "*",
         "ext-intl": "*",
         "twig/extensions": "^1.5"
