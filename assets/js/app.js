@@ -67,12 +67,14 @@ class MbizRichEditorFields {
         // Init only if we match at least one target
         if (this.targets.length) {
             let _self = this;
-            // Init fields only when UI Elements are built
-            this.container.addEventListener('uiElementsBuilt', function(e) {
-                _self.log('Ui Elements container is built', e);
-                _self.initFields();
-                _self.toggleUiElementsVisibility();
-            });
+            for (let target of this.targets) {
+                // Init fields only when UI Elements are built
+                this.container.addEventListener('uiElementsBuilt', function(e) {
+                    _self.log('Ui Elements container is built', e);
+                    _self.initFields(target);
+                    _self.toggleUiElementsVisibility();
+                });
+            }
             this.initUiElements(this.container, this.uiElements);
         }
     }
@@ -126,28 +128,27 @@ class MbizRichEditorFields {
     /**
      * Init each Rich Editor fields
      */
-    initFields() {
-        for (let target of this.targets) {
-            let content = target.value;
-            if (!content) {
-                content = '[]';
-            }
-            this.log('Target\'s content:', content);
-            let jsonContent;
-            try {
-                jsonContent = JSON.parse(content);
-            } catch(e) {
-                this.error(
-                    'Unable to parse the Rich Content JSON for this content : ',
-                    content,
-                    this.errorsTranslations.cannotParseJson,
-                    true
-                );
-                continue;
-            }
-            this.initField(target, jsonContent);
-            this.initActions(target, jsonContent);
+    initFields(target) {
+        let content = target.value;
+        if (!content) {
+            content = '[]';
         }
+        this.log('Target\'s content:', content);
+        let jsonContent;
+        try {
+            jsonContent = JSON.parse(content);
+        } catch(e) {
+            this.error(
+                target,
+                'Unable to parse the Rich Content JSON for this content : ',
+                content,
+                this.errorsTranslations.cannotParseJson,
+                true
+            );
+        }
+        this.initField(target, jsonContent);
+        this.initActions(target, jsonContent);
+
     }
 
     /**
@@ -170,31 +171,34 @@ class MbizRichEditorFields {
 
         // Loop on UI Elements
         let error = false;
-        for (let uiElement of jsonContent) {
-            // Retrieve the Ui Element type
-            this.log('Init UI Element:', uiElement);
-            if (typeof this.uiElements[uiElement.type] === 'undefined') {
-                error = true;
-                this.error(
-                    'Cannot find element of type ',
-                    uiElement.type,
-                    this.errorsTranslations.cannotFindType
-                );
-                continue;
-            }
+        if (jsonContent) {
+            for (let uiElement of jsonContent) {
+                // Retrieve the Ui Element type
+                this.log('Init UI Element:', uiElement);
+                if (typeof this.uiElements[uiElement.type] === 'undefined') {
+                    error = true;
+                    this.error(
+                        target,
+                        'Cannot find element of type ',
+                        uiElement.type,
+                        this.errorsTranslations.cannotFindType
+                    );
+                    continue;
+                }
 
-            // Render Ui Element meta data
-            let uiElementMetaData = this.uiElements[uiElement.type];
-            this.log('Matched Ui Element with meta data:', uiElementMetaData);
-            let renderedUiElementMetaData = this.renderUiElementMetaData(uiElement.type, uiElementMetaData, this.templateRender);
-            if (renderedUiElementMetaData === '') {
-                error = true;
-                continue;
-            }
+                // Render Ui Element meta data
+                let uiElementMetaData = this.uiElements[uiElement.type];
+                this.log('Matched Ui Element with meta data:', uiElementMetaData);
+                let renderedUiElementMetaData = this.renderUiElementMetaData(uiElement.type, uiElementMetaData, this.templateRender);
+                if (renderedUiElementMetaData === '') {
+                    error = true;
+                    continue;
+                }
 
-            // Add rendered Ui Element meta data in container
-            this.log('Rendered Ui Element meta data:', renderedUiElementMetaData);
-            elementsContainer.insertAdjacentHTML('beforeend', renderedUiElementMetaData);
+                // Add rendered Ui Element meta data in container
+                this.log('Rendered Ui Element meta data:', renderedUiElementMetaData);
+                elementsContainer.insertAdjacentHTML('beforeend', renderedUiElementMetaData);
+            }
         }
 
         // Add actions buttons before target
@@ -263,7 +267,7 @@ class MbizRichEditorFields {
                 let removedIndex = _self.getElementIndex(elementToRemove);
                 // Check if index found and element exists
                 if (removedIndex === false || typeof jsonContent[removedIndex] === 'undefined') {
-                    _self.error('Cannot find UI Element in index', {index: removedIndex, jsonContent: jsonContent});
+                    _self.error(target, 'Cannot find UI Element in index', {index: removedIndex, jsonContent: jsonContent});
                     return;
                 }
                 _self.removeUiElement(removedIndex, jsonContent, target);
@@ -288,7 +292,7 @@ class MbizRichEditorFields {
             let updateIndex = _self.getElementIndex(elementToUpdate);
             // Check if index found and element exists
             if (updateIndex === false || typeof jsonContent[updateIndex] === 'undefined') {
-                _self.error('Cannot find UI Element in index', {index: updateIndex, jsonContent: jsonContent});
+                _self.error(target, 'Cannot find UI Element in index', {index: updateIndex, jsonContent: jsonContent});
                 return;
             }
             let uiElementToUpdate = jsonContent[updateIndex];
@@ -405,7 +409,7 @@ class MbizRichEditorFields {
         form.addEventListener('updateElement', function(e) {
             // Check if UI Element type we want to update exists
             if (typeof _self.uiElements[uiElementType] === 'undefined') {
-                _self.error('Cannot find element of type ', uiElementType);
+                _self.error(target, 'Cannot find element of type ', uiElementType);
                 return;
             }
             // Update elements with form data and modal to close it if data is valid
@@ -489,7 +493,7 @@ class MbizRichEditorFields {
      */
     updateWithFormData(form, uiElementType, uiElementIndex, modal, jsonContent, target) {
         // Convert form data to an array
-        const updatedElement = this.convertFormToElement(form, uiElementType, modal);
+        const updatedElement = this.convertFormToElement(form, uiElementType, modal, target);
         if (updatedElement) {
             this.log('Retrieved form element', {updatedElement: updatedElement});
             // Update UI Element
@@ -507,7 +511,7 @@ class MbizRichEditorFields {
      * @param modal
      * @returns {Array}
      */
-    convertFormToElement(form, uiElementType, modal) {
+    convertFormToElement(form, uiElementType, modal, target) {
         // Initialize form data
         let formData = new FormData(form);
         formData.append('uiElementType', uiElementType);
@@ -542,6 +546,7 @@ class MbizRichEditorFields {
                     element = false;
                 } else {
                     _self.error(
+                        target,
                         'Error during file upload',
                         {form: form, status: xhr.status, xhr: xhr},
                         _self.errorsTranslations.cannotUploadFile
@@ -673,7 +678,7 @@ class MbizRichEditorFields {
                 if (typeof type !== 'undefined') {
                     this.addUiElement(type, newIndex, jsonContent, target)
                 } else {
-                    this.error('Cannot find `uiElementType` to add in data set', {dataSet: el.dataset, el: el});
+                    this.error(target, 'Cannot find `uiElementType` to add in data set', {dataSet: el.dataset, el: el});
                 }
             }
         });
@@ -725,7 +730,7 @@ class MbizRichEditorFields {
         if (oldIndex !== newIndex) {
             this.log('Move UI Element : ', {oldIndex: oldIndex, newIndex: newIndex, target: target, beforeMoveJson: jsonContent});
             if (newIndex >= jsonContent.length) {
-                this.error('Element moved outside the list', {newIndex: newIndex, sizeList: jsonContent.length})
+                this.error(target, 'Element moved outside the list', {newIndex: newIndex, sizeList: jsonContent.length})
             }
             // Move the UI element to the selected index and change position of others
             jsonContent.splice(newIndex, 0, jsonContent.splice(oldIndex, 1)[0]);
@@ -754,7 +759,7 @@ class MbizRichEditorFields {
             target.value = JSON.stringify(jsonContent);
             this.log('Updated UI Element : ', {index: index, element: element, jsonContent: jsonContent, target: target});
         } else {
-            this.error('Cannot found element for index', {index: index, element: element, jsonContent: jsonContent, target: target})
+            this.error(target, 'Cannot found element for index', {index: index, element: element, jsonContent: jsonContent, target: target})
         }
     }
 
@@ -777,21 +782,21 @@ class MbizRichEditorFields {
     /**
      * Add console error if debug
      *
+     * @param target
      * @param description
      * @param content
      * @param displayedError
      * @param resetRichField
      */
-    error(description, content, displayedError = null, resetRichField = false) {
+    error(target, description, content, displayedError = null, resetRichField = false) {
         if (resetRichField) {
             // If error, display original fields
-            for (let target of this.targets) {
-                target.removeAttribute('hidden');
-            }
+            console.log(target);
+            target.removeAttribute('hidden');
 
             // Remove generated blocks
-            for (let target of document.querySelectorAll('.' + this.classes.uiElementList)) {
-                target.remove();
+            for (let list of target.querySelectorAll('.' + this.classes.uiElementList)) {
+                list.remove();
             }
         }
 
