@@ -67,14 +67,18 @@ class MbizRichEditorFields {
         // Init only if we match at least one target
         if (this.targets.length) {
             let _self = this;
-            for (let target of this.targets) {
-                // Init fields only when UI Elements are built
+
+            this.targets.forEach((target, index) => {
                 this.container.addEventListener('uiElementsBuilt', function(e) {
                     _self.log('Ui Elements container is built', e);
-                    _self.initFields(target);
-                    _self.toggleUiElementsVisibility();
+                    _self.initFields(target, index);
                 });
-            }
+            });
+
+           this.container.addEventListener('uiElementsBuilt', function() {
+                _self.toggleUiElementsVisibility();
+            });
+
             this.initUiElements(this.container, this.uiElements);
         }
     }
@@ -128,7 +132,7 @@ class MbizRichEditorFields {
     /**
      * Init each Rich Editor fields
      */
-    initFields(target) {
+    initFields(target, index) {
         let content = target.value;
         if (!content) {
             content = '[]';
@@ -146,7 +150,7 @@ class MbizRichEditorFields {
                 true
             );
         }
-        this.initField(target, jsonContent);
+        this.initField(target, jsonContent, index);
         this.initActions(target, jsonContent);
 
     }
@@ -157,7 +161,7 @@ class MbizRichEditorFields {
      * @param target
      * @param jsonContent [{type: "UI Element Type", fields: {}}]
      */
-    initField(target, jsonContent) {
+    initField(target, jsonContent, index) {
         this.log('Init field with parsed content:', jsonContent);
 
         // Hide original input
@@ -165,7 +169,7 @@ class MbizRichEditorFields {
 
         // Init container
         const elementsContainer = document.createElement('div');
-        elementsContainer.id = this.id.uiElementsContent;
+        elementsContainer.id = this.id.uiElementsContent + '-' + index;
         elementsContainer.classList.add(this.classes.draggableContainer, this.classes.uiElementList);
         elementsContainer.dataset.placeholder = this.translations.placeholder;
 
@@ -207,7 +211,7 @@ class MbizRichEditorFields {
         // Append generated HTML to display current UI Elements of target
         if (!error) {
             target.parentNode.appendChild(elementsContainer);
-            let reorder = this.initReorder(document.querySelector('#' + this.id.uiElementsContainer + '> div'), elementsContainer);
+            let reorder = this.initReorder(document.querySelector('#' + this.id.uiElementsContainer + '> div'), document.querySelector('#' + elementsContainer.id));
             this.initReorderEvent(reorder, target, jsonContent);
         }
     }
