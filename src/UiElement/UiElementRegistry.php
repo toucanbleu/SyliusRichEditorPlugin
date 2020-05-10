@@ -18,29 +18,30 @@ final class UiElementRegistry implements UiElementRegistryInterface
      */
     public function addUiElement(UiElementInterface $uiElement): void
     {
-        Assert::keyNotExists($this->uiElements, $uiElement->getType(), 'UiElement with type "%s" is already registered.');
+        $uiElementClass = get_class($uiElement);
+        Assert::keyNotExists($this->uiElements, $uiElementClass, 'UiElement "%s" is already registered.');
 
-        $this->uiElements[$uiElement->getType()] = $uiElement;
+        $this->uiElements[$uiElementClass] = $uiElement;
     }
 
     /**
      * @inheritDoc
      */
-    public function hasUiElement(string $type): bool
+    public function hasUiElement(string $className): bool
     {
-        return array_key_exists($type, $this->uiElements);
+        return array_key_exists($className, $this->uiElements);
     }
 
     /**
      * @inheritDoc
      */
-    public function getUiElement(string $type): UiElementInterface
+    public function getUiElement(string $className): UiElementInterface
     {
-        if (!$this->hasUiElement($type)) {
-            throw new UiElementNotFoundException($type);
+        if (!$this->hasUiElement($className)) {
+            throw new UiElementNotFoundException($className);
         }
 
-        return $this->uiElements[$type];
+        return $this->uiElements[$className];
     }
 
     /**

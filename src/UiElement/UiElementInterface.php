@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace MonsieurBiz\SyliusRichEditorPlugin\UiElement;
 
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\Form\FormTypeInterface;
+use Twig\Environment;
 
-// @TODO : Implements JsonSerializable
-
-interface UiElementInterface extends \JsonSerializable
+interface UiElementInterface extends \JsonSerializable, FormTypeInterface
 {
-    public function __construct(TranslatorInterface $translator);
     public function getType(): string;
-    public function getShortDescription(): string;
-    public function getDescription(): string;
-    public function getTitle(): string;
-    public function getImage(): string;
+
     public function getFields(): array;
-    public function getFormClass(): string;
+
+    public function getDescription(): string;
+
+    public function getImagePath(): string;
+
+    public function getName(): string;
+
+    public function getShortDescription(): string;
+
     public function getTemplate(): string;
+
+    public function getValues(): array;
+
+    public function getFormattedContent(Environment $twigEnvironment): string;
 }

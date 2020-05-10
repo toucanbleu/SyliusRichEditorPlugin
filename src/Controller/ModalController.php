@@ -12,31 +12,38 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 class ModalController extends AbstractController
 {
-    /** @var EngineInterface */
-    private $templatingEngine;
+    /**
+     * @var Environment
+     */
+    private Environment $twigEnvironment;
 
-    /** @var UiElementFactoryInterface */
-    private $uiElementFactory;
+    /**
+     * @var UiElementFactoryInterface
+     */
+    private UiElementFactoryInterface $uiElementFactory;
 
-    /** @var TranslatorInterface */
-    private $translator;
+    /**
+     * @var TranslatorInterface
+     */
+    private TranslatorInterface $translator;
 
     /**
      * ModalController constructor.
      *
-     * @param EngineInterface $templatingEngine
+     * @param Environment $twigEnvironment
      * @param UiElementFactoryInterface $uiElementFactory
      * @param TranslatorInterface $translator
      */
     public function __construct(
-        EngineInterface $templatingEngine,
+        Environment $twigEnvironment,
         UiElementFactoryInterface $uiElementFactory,
         TranslatorInterface $translator
     ) {
-        $this->templatingEngine = $templatingEngine;
+        $this->twigEnvironment = $twigEnvironment;
         $this->uiElementFactory = $uiElementFactory;
         $this->translator = $translator;
     }
@@ -61,21 +68,23 @@ class ModalController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // Find UI Element from type
+        // Find UI Element from class name
         try {
-            $uiElement = $this->uiElementFactory->getUiElementByType($data['type']);
+            $uiElement = $this->uiElementFactory->getUiElementByClassName($data['type']);
         } catch (UiElementNotFoundException $exception) {
             throw $this->createNotFoundException($exception->getMessage());
         }
 
         // Create form depending on UI Element with data
-        $form = $this->createForm($uiElement->getFormClass(), $data['fields']);
+        $form = $this->createForm(get_class($uiElement), $data['fields']);
 
-        return $this->templatingEngine->renderResponse('@MonsieurBizSyliusRichEditorPlugin/Admin/Modal/edit.html.twig', [
-            'form' => $form->createView(),
-            'uiElement' => $uiElement,
-            'data' => $data['fields'],
-        ]);
+        return new Response(
+            $this->twigEnvironment->render('@MonsieurBizSyliusRichEditorPlugin/Admin/Modal/edit.html.twig', [
+                'form' => $form->createView(),
+                'uiElement' => $uiElement,
+                'data' => $data['fields'],
+            ])
+        );
     }
 
     /**
@@ -86,21 +95,21 @@ class ModalController extends AbstractController
      */
     public function submitAction(Request $request): Response
     {
-        $uiElementType = $request->request->get('uiElementType');
-        if (!$request->isXmlHttpRequest() || empty($uiElementType)) {
+        $uiElementClass = $request->request->get('uiElementType');
+        if (!$request->isXmlHttpRequest() || empty($uiElementClass)) {
             throw $this->createNotFoundException();
         }
 
         // Find UI Element from type
         try {
-            $uiElement = $this->uiElementFactory->getUiElementByType($uiElementType);
+            $uiElement = $this->uiElementFactory->getUiElementByClassName($uiElementClass);
         } catch (UiElementNotFoundException $exception) {
             throw $this->createNotFoundException($exception->getMessage());
         }
 
         // Create and validate form
         $data = $request->request->get($uiElement->getType());
-        $form = $this->createForm($uiElement->getFormClass(), $data);
+        $form = $this->createForm(get_class($uiElement), $data);
         $form->handleRequest($request);
         if (!$form->isSubmitted()) {
             throw $this->createNotFoundException();
@@ -112,7 +121,7 @@ class ModalController extends AbstractController
             foreach ($form as $child) {
                 if (!$child->isValid()) {
                     foreach ($child->getErrors() as $error) {
-                        $childLabel = $this->translator->trans(sprintf('monsieurbiz_richeditor_plugin.ui_element.%s.field.%s', $uiElementType, $child->getName()));
+                        $childLabel = $this->translator->trans(sprintf('monsieurbiz_richeditor_plugin.ui_element.%s.field.%s', $uiElementClass, $child->getName()));
                         $errors[$childLabel][] = $error->getMessage();
                     }
                 }
@@ -122,14 +131,14 @@ class ModalController extends AbstractController
 
         // Create object with UiElement data
         $element = new \stdClass();
-        $element->type = $uiElement->getType();
+        $element->type = get_class($uiElement);
         $element->fields = new \stdClass();
         foreach ($uiElement->getFields() as $field) {
             // If file, upload it and retrieve the path
-            if (($file = $request->files->get($uiElementType)) && isset($file[$field])) {
+            if (($file = $request->files->get($uiElement->getType())) && isset($file[$field])) {
                 $element->fields->{$field} = $this->uploadAndReturnPath($file[$field]);
             // Value in form exists, we take it
-            } elseif (($value = $request->request->get($uiElementType)) && isset($value[$field])) {
+            } elseif (($value = $request->request->get($uiElement->getType())) && isset($value[$field])) {
                 // Allow array if choices inputs
                 if (is_array($value[$field])) {
                     $element->fields->{$field} = $value[$field];

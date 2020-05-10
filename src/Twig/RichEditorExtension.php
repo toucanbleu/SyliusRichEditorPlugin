@@ -82,9 +82,9 @@ final class RichEditorExtension extends AbstractExtension
 
             $template = $uiElement->getTemplate();
 
-            $event = new RenderUiElementEvent($uiElement, $element);
-            $this->eventDispatcher->dispatch($event);
-            $element = $event->getElement();
+//            $event = new RenderUiElementEvent($uiElement, $element);
+//            $this->eventDispatcher->dispatch($event);
+//            $element = $event->getElement();
 
             $html .= $this->twig->render($template, [
                 'uiElement' => $uiElement,

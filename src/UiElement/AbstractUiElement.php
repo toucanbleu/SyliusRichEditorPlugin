@@ -4,89 +4,53 @@ declare(strict_types=1);
 
 namespace MonsieurBiz\SyliusRichEditorPlugin\UiElement;
 
-use MonsieurBiz\SyliusRichEditorPlugin\Exception\UndefinedUiElementTypeException;
+use MonsieurBiz\SyliusRichEditorPlugin\Event\RenderUiElementEvent;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
-abstract class AbstractUiElement implements UiElementInterface
+abstract class AbstractUiElement extends AbstractType implements UiElementInterface
 {
-    const TRANSLATION_PREFIX = 'monsieurbiz_richeditor_plugin.ui_element';
+    protected TranslatorInterface $translator;
 
-    protected $type = '';
+    protected EventDispatcherInterface $eventDispatcher;
 
-    /**
-     * @var TranslatorInterface
-     */
-    private $translator;
-
-    /**
-     * AbstractUiElement constructor.
-     * @param TranslatorInterface $translator
-     */
-    public function __construct(TranslatorInterface $translator)
+    public function __construct(TranslatorInterface $translator, EventDispatcherInterface $eventDispatcher)
     {
         $this->translator = $translator;
-    }
-
-    /**
-     * @return TranslatorInterface
-     */
-    public function getTranslator(): TranslatorInterface
-    {
-        return $this->translator;
-    }
-
-    public function getType(): string
-    {
-        if (empty($this->type)) {
-            $reflection = new \ReflectionClass(get_class($this));
-            throw new UndefinedUiElementTypeException(sprintf(
-                'Please add a type to your UI Element in class "%s". You can try to add this property `protected $type = \'%s\';`',
-                $reflection->getName(),
-                strtolower($reflection->getShortName()) // @TODO we can improve it with snakeCaseToCamelCaseNameConverter
-            ));
-        }
-        return $this->type;
-    }
-
-    public function getTitle(): string
-    {
-        return $this->getTranslation('title');
-    }
-
-    public function getShortDescription(): string
-    {
-        return $this->getTranslation('short_description');
-    }
-
-    public function getDescription(): string
-    {
-        return $this->getTranslation('description');
-    }
-
-    private function getTranslation(string $key): string
-    {
-        $translationKey = sprintf('%s.%s.%s', self::TRANSLATION_PREFIX, $this->getType(), $key);
-        return $this->getTranslator()->trans($translationKey) ?? $translationKey;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function jsonSerialize(): array
     {
         return [
-            'short_description' => $this->getShortDescription(),
+            '_class' => get_class($this),
+            'type' => $this->getType(),
             'description' => $this->getDescription(),
-            'title' => $this->getTitle(),
-            'image' => $this->getImage(),
-            'fields' => $this->getFields(),
+            'name' => $this->getName(),
+            'title' => $this->getName(),
+            'image' => $this->getImagePath(),
+            'image_path' => $this->getImagePath(),
+            'values' => $this->getValues(),
         ];
     }
 
-    public function getTemplate(): string
-    {
-        return sprintf('@MonsieurBizSyliusRichEditorPlugin/UiElement/%s.html.twig', $this->getType());
-    }
-
-    public function getImage(): string
+    public function getImagePath(): string
     {
         return '/bundles/monsieurbizsyliusricheditorplugin/images/ui_elements/default.svg';
     }
+
+    public function getFormattedContent(Environment $twigEnvironment): string
+    {
+        $event = new RenderUiElementEvent($this);
+        $this->eventDispatcher->dispatch($event);
+
+        $element = $event->getUiElement();
+
+        return $twigEnvironment->render($this->getTemplate(), [
+            'uiElement' => $element,
+        ]);
+    }
+
 }

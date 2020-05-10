@@ -7,7 +7,7 @@ namespace MonsieurBiz\SyliusRichEditorPlugin\Form\Type\UiElement;
 use MonsieurBiz\SyliusRichEditorPlugin\Form\Type\WysiwygType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Constraints;
 
 class TextType extends AbstractType
 {
@@ -18,7 +18,7 @@ class TextType extends AbstractType
                 'required' => true,
                 'label' => 'monsieurbiz_richeditor_plugin.ui_element.text.field.content',
                 'constraints' => [
-                    new Assert\NotBlank([])
+                    new Constraints\NotBlank([])
                 ],
             ])
         ;

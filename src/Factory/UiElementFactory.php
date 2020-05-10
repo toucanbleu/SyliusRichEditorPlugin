@@ -20,9 +20,8 @@ final class UiElementFactory implements UiElementFactoryInterface
      *
      * @param UiElementRegistryInterface $uiElementRegistry
      */
-    public function __construct(
-        UiElementRegistryInterface $uiElementRegistry
-    ) {
+    public function __construct(UiElementRegistryInterface $uiElementRegistry)
+    {
         $this->uiElementRegistry = $uiElementRegistry;
     }
 
@@ -35,13 +34,13 @@ final class UiElementFactory implements UiElementFactoryInterface
     }
 
     /**
-     * @param string $type
+     * @param string $className
      *
      * @return UiElementInterface
      * @throws UiElementNotFoundException
      */
-    public function getUiElementByType(string $type): UiElementInterface
+    public function getUiElementByClassName(string $className): UiElementInterface
     {
-        return $this->uiElementRegistry->getUiElement($type);
+        return $this->uiElementRegistry->getUiElement($className);
     }
 }

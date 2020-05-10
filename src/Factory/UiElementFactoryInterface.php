@@ -15,11 +15,11 @@ interface UiElementFactoryInterface
     public function getUiElements(): array;
 
     /**
-     * @param string $type
+     * @param string $className
      *
      * @return UiElementInterface
      * @throws UiElementNotFoundException
      */
-    public function getUiElementByType(string $type): UiElementInterface;
+    public function getUiElementByClassName(string $className): UiElementInterface;
 
 }

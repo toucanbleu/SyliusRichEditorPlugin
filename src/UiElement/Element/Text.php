@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace MonsieurBiz\SyliusRichEditorPlugin\UiElement\Element;
 
-use MonsieurBiz\SyliusRichEditorPlugin\Form\Type\UiElement\TextType;
+use MonsieurBiz\SyliusRichEditorPlugin\Form\Type\WysiwygType;
 use MonsieurBiz\SyliusRichEditorPlugin\UiElement\AbstractUiElement;
+use MonsieurBiz\SyliusRichEditorPlugin\UiElement\UiElementInterface;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints;
 
-class Text extends AbstractUiElement
+class Text extends AbstractUiElement implements UiElementInterface
 {
-    protected $type = 'text';
-
-    public function getImage(): string
+    public function getType(): string
     {
-        return '/bundles/monsieurbizsyliusricheditorplugin/images/ui_elements/text.svg';
+        return 'text';
     }
 
     public function getFields(): array
@@ -21,8 +22,46 @@ class Text extends AbstractUiElement
         return ['content'];
     }
 
-    public function getFormClass(): string
+    public function getImagePath(): string
     {
-        return TextType::class;
+        return '/bundles/monsieurbizsyliusricheditorplugin/images/ui_elements/text.svg';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Description text';
+    }
+
+    public function getShortDescription(): string
+    {
+        return 'Short description text';
+    }
+
+    public function getName(): string
+    {
+        return 'Name text';
+    }
+
+    public function getValues(): array
+    {
+        return [];
+    }
+
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        $builder
+            ->add('content', WysiwygType::class, [
+                'required' => true,
+                'label' => 'monsieurbiz_richeditor_plugin.ui_element.text.field.content',
+                'constraints' => [
+                    new Constraints\NotBlank()
+                ],
+            ])
+        ;
+    }
+
+    public function getTemplate(): string
+    {
+        return '@MonsieurBizSyliusRichEditorPlugin/UiElement/text.html.twig';
     }
 }
