@@ -75,7 +75,7 @@ final class RichEditorExtension extends AbstractExtension
             }
 
             try {
-                $uiElement = $this->uiElementFactory->getUiElementByType($element['type']);
+                $uiElement = $this->uiElementFactory->getUiElementByClassName($element['type']);
             } catch (UndefinedUiElementTypeException $exception) {
                 continue;
             }
