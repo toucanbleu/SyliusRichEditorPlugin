@@ -5,7 +5,11 @@
         author
         content
 #}
-<blockquote>
-    {{ element.content | raw | nl2br }}
-    <br />— <cite>{{ element.author }}</cite>
-</blockquote>
+{% if element is not empty %}
+    <div>
+        <blockquote>
+            {{ element.content | raw | nl2br }}
+            <br />— <cite>{{ element.author }}</cite>
+        </blockquote>
+    </div>
+{% empty %}

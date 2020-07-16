@@ -16,7 +16,7 @@ class QuoteType extends AbstractType
     {
         $builder
             ->add('author', FormTextType::class, [
-                'required' => true,
+                'required' => false,
                 'label' => 'monsieurbiz_richeditor_plugin.ui_element.quote.field.author',
                 'constraints' => [
                     new Assert\NotBlank([])
